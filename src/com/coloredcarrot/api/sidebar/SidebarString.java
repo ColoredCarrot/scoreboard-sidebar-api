@@ -94,12 +94,12 @@ public class SidebarString
 				
 				if (previousWasColorChar && c == colorChar)
 				{
-					sub += "��";
+					sub += "§";
 					previousWasColorChar = false;
 				}
 				else if (previousWasColorChar)
 				{
-					sub += "�" + c;
+					sub += "§" + c;
 					curColor = c;
 					previousWasColorChar = false;
 				}
@@ -113,7 +113,7 @@ public class SidebarString
 					if (curColor == null)
 						sub += c;
 					else
-						sub += "�" + curColor + c;
+						sub += "§" + curColor + c;
 					
 				}
 				
@@ -254,14 +254,14 @@ public class SidebarString
     {
         
         // say this:
-        // "�7hel"
+        // "§7hel"
         // "7hell"
         // "hello"
         // "ello "
-        // "llo �"
-        // "lo �c"
-        // "o �cg"
-        // " �cgu"
+        // "llo §"
+        // "lo §c"
+        // "o §cg"
+        // " §cgu"
         
         List<String> newAnimated              = new ArrayList<>();
         boolean      lastStartedWithColorChar = false;
@@ -269,12 +269,12 @@ public class SidebarString
         for (String var : animated)
         {
             
-            if (var.startsWith("�") && lastStartedWithColorChar)
+            if (var.startsWith("§") && lastStartedWithColorChar)
             {
                 newAnimated.add(var);
                 lastStartedWithColorChar = true;
             }
-            else if (var.startsWith("�"))
+            else if (var.startsWith("§"))
                 lastStartedWithColorChar = true;
             else if (lastStartedWithColorChar)
                 lastStartedWithColorChar = false;
