@@ -1,0 +1,5 @@
+main: com.coloredcarrot.api.sidebar.SidebarAPI
+version: 2.9.0
+author: ColoredCarrot
+name: SidebarAPI
+softdepend: [PlaceholderAPI]
