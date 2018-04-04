@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  * All rights reserved.
@@ -333,6 +334,26 @@ public class SidebarString
         
         return animated.get(i - 1);
         
+    }
+
+    /**
+     * Calls {@link #getNext()} and, if necessary,
+     * trims the result to max. 28 characters and prints
+     * a warning message to the specified logger.
+     * @param logger The logger to print the warning message to
+     * @return The next text
+     * @see #getNext()
+     */
+    public String getNextAndTrim(Logger logger)
+    {
+        String next = getNext();
+        if (next.length() > 28)
+        {
+            logger.warning("[Sidebar] Entry variation #" + (i + 1) + " was trimmed to 28 characters (originally \"" + next + "\")");
+            next = next.substring(0, 28);
+            animated.set(i - 1, next);
+        }
+        return next;
     }
     
     /**
