@@ -48,24 +48,23 @@ import java.util.UUID;
  *
  * @author ColoredCarrot
  */
-public class Sidebar
-        implements ConfigurationSerializable
+public class Sidebar implements ConfigurationSerializable
 {
-    
+
     private static transient ScoreboardManager bukkitManager = Bukkit.getScoreboardManager();
-    
+
     static
     {
         ConfigurationSerialization.registerClass(Sidebar.class);
     }
-    
+
     private           List<SidebarString> entries;
     private transient Scoreboard          bukkitScoreboard;
     private transient Objective           bukkitObjective;
     private transient BukkitTask          updateTask;
     private           String              title;
     private           Player              setPlaceholdersOnUpdate = null;
-    
+
     /**
      * Constructs a new Sidebar.
      *
@@ -76,52 +75,52 @@ public class Sidebar
      */
     public Sidebar(String title, Plugin plugin, int updateDelayInTicks, SidebarString... entries)
     {
-        
+
         bukkitScoreboard = bukkitManager.getNewScoreboard();
-        
+
         bukkitObjective = bukkitScoreboard.registerNewObjective("obj", "dummy");
-        
+
         this.entries = new ArrayList<>();
         this.entries.addAll(Arrays.asList(entries));
-        
+
         this.title = title;
-        
+
         update();
-        
+
         setUpdateDelay(plugin, updateDelayInTicks);
-        
+
         SidebarAPI.registerSidebar(this);
-        
+
     }
-    
+
     @SuppressWarnings("unchecked")
     public Sidebar(Map<String, Object> map)
     {
-        
+
         entries = (List<SidebarString>) map.get("entries");
         title = (String) map.get("title");
-        
+
         if (map.containsKey("placeholders"))
             setPlaceholdersOnUpdate = Bukkit.getPlayer(UUID.fromString((String) map.get("placeholders")));
-        
+
     }
-    
+
     @Override
     public Map<String, Object> serialize()
     {
-        
+
         Map<String, Object> map = new HashMap<>();
-        
+
         map.put("entries", entries);
         map.put("title", title);
-        
+
         if (setPlaceholdersOnUpdate != null)
             map.put("placeholders", setPlaceholdersOnUpdate.getUniqueId().toString());
-        
+
         return map;
-        
+
     }
-    
+
     /**
      * Gets the player that will be used for setting the placeholders in the update function.
      *
@@ -132,7 +131,7 @@ public class Sidebar
     {
         return setPlaceholdersOnUpdate;
     }
-    
+
     /**
      * Sets the player that will be used for setting the placeholders in the update function.
      * If set to null, the placeholders will not be set.
@@ -146,7 +145,7 @@ public class Sidebar
         setPlaceholdersOnUpdate = player;
         return this;
     }
-    
+
     /**
      * Sets how many server ticks to wait in between each update.
      *
@@ -156,28 +155,28 @@ public class Sidebar
      */
     public Sidebar setUpdateDelay(Plugin plugin, int delayInTicks)
     {
-        
+
         if (delayInTicks < 1)
             throw new IllegalArgumentException("delayInTicks cannot be less than 1!");
-        
+
         if (updateTask != null)
             updateTask.cancel();
-        
+
         updateTask = (new BukkitRunnable()
         {
-            
+
             @Override
             public void run()
             {
                 update();
             }
-            
+
         }).runTaskTimer(plugin, delayInTicks, delayInTicks);
-        
+
         return this;
-        
+
     }
-    
+
     /**
      * Sets all placeholders for every SidebarString and every variation.
      *
@@ -187,14 +186,14 @@ public class Sidebar
      */
     public Sidebar setAllPlaceholders(Player forPlayer)
     {
-        
+
         for (SidebarString entry : entries)
             entry.setPlaceholders(forPlayer);
-        
+
         return this;
-        
+
     }
-    
+
     /**
      * Gets the title of this Sidebar.
      *
@@ -204,7 +203,7 @@ public class Sidebar
     {
         return title;
     }
-    
+
     /**
      * Sets the title of this Sidebar.
      *
@@ -216,7 +215,7 @@ public class Sidebar
         this.title = title;
         return this;
     }
-    
+
     /**
      * Gets a list of all entries.
      *
@@ -226,7 +225,7 @@ public class Sidebar
     {
         return entries;
     }
-    
+
     /**
      * Overrides all current entries.
      *
@@ -238,7 +237,7 @@ public class Sidebar
         this.entries = entries;
         return this;
     }
-    
+
     /**
      * Adds an entry.
      *
@@ -250,7 +249,7 @@ public class Sidebar
         this.entries.addAll(Arrays.asList(entries));
         return this;
     }
-    
+
     /**
      * Removes an entry.
      *
@@ -262,7 +261,7 @@ public class Sidebar
         entries.remove(entry);
         return this;
     }
-    
+
     /**
      * Removes the entry referring to a specific line.
      *
@@ -274,7 +273,7 @@ public class Sidebar
         entries.remove(num);
         return this;
     }
-    
+
     /**
      * Shows this Sidebar to a player.
      *
@@ -286,7 +285,7 @@ public class Sidebar
         player.setScoreboard(bukkitScoreboard);
         return this;
     }
-    
+
     /**
      * Hides this Sidebar from a player.
      *
@@ -298,7 +297,7 @@ public class Sidebar
         player.setScoreboard(bukkitManager.getMainScoreboard());
         return this;
     }
-    
+
     /**
      * Updates the sidebar (it's entries and title).
      * If {@link #getPlaceholderPlayerForUpdate()} is not null, this will also run {@link #setAllPlaceholders(Player)} with {@link #getPlaceholderPlayerForUpdate()} as the argument.
@@ -307,15 +306,15 @@ public class Sidebar
      */
     public Sidebar update()
     {
-        
+
         if (setPlaceholdersOnUpdate != null)
             setAllPlaceholders(setPlaceholdersOnUpdate);
-        
+
         redoBukkitObjective();
-        
+
         for (int i = entries.size(); i > 0; i--)
             bukkitObjective.getScore(entries.get(entries.size() - i).getNext()).setScore(i);
-        
+
         // this method had been causing issues
 		/*for (int i = entries.size(); i > 0; i--)
 		{
@@ -337,11 +336,11 @@ public class Sidebar
 			bukkitObjective.getScore(team.getEntries().toArray(new String[1])[0]).setScore(i);
 			
 		}*/
-        
+
         return this;
-        
+
     }
-    
+
     // this method had been causing issues
 	/*private String[] generateTeamStrings(String line)
 	{
@@ -362,7 +361,7 @@ public class Sidebar
 				};
 		
 	}*/
-    
+
     /**
      * Adds an empty entry.
      * The entry won't conflict with any other empty entries made this way.
@@ -371,22 +370,22 @@ public class Sidebar
      */
     public Sidebar addEmpty()
     {
-        
+
         entries.add(new SidebarString(new String(new char[entries.size()]).replace("\0", " ")));
-        
+
         return this;
-        
+
     }
-    
+
     private void redoBukkitObjective()
     {
-        
+
         bukkitObjective.unregister();
         bukkitObjective = bukkitScoreboard.registerNewObjective("obj", "dummy");
-        
+
         bukkitObjective.setDisplayName(title);
         bukkitObjective.setDisplaySlot(DisplaySlot.SIDEBAR);
-        
+
     }
-    
+
 }
