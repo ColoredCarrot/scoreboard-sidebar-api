@@ -24,7 +24,9 @@
 
 package com.coloredcarrot.api.sidebar;
 
+import com.google.common.collect.ImmutableSet;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.entity.Player;
@@ -35,12 +37,15 @@ import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
+import org.bukkit.scoreboard.Team;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -51,6 +56,8 @@ import java.util.UUID;
 public class Sidebar implements ConfigurationSerializable
 {
 
+    private static final Set<String> EMPTY_COLOR_STRINGS = ImmutableSet.of("§f", "§f§r", "§r", "§r§f");
+
     private static transient ScoreboardManager bukkitManager = Bukkit.getScoreboardManager();
 
     static
@@ -58,33 +65,45 @@ public class Sidebar implements ConfigurationSerializable
         ConfigurationSerialization.registerClass(Sidebar.class);
     }
 
-    private           List<SidebarString> entries;
-    private transient Scoreboard          bukkitScoreboard;
-    private transient Objective           bukkitObjective;
-    private transient BukkitTask          updateTask;
-    private           String              title;
-    private           Player              setPlaceholdersOnUpdate = null;
+    private final transient Plugin              owningPlugin;
+    private                 List<SidebarString> entries;
+    private transient       Scoreboard          bukkitScoreboard;
+    private transient       Objective           bukkitObjective;
+    private transient       BukkitTask          updateTask;
+    private                 String              title;
+    private                 Player              setPlaceholdersOnUpdate = null;
+    private transient       Team[]              teams                   = new Team[16];
+    private                 int                 prevEntries             = 0;
 
     /**
      * Constructs a new Sidebar.
      *
      * @param title              (String) - the title of the sidebar
      * @param plugin             (Plugin) - your plugin
-     * @param updateDelayInTicks (int) - how many server ticks to wait in between each update. 20 = 1 second
+     * @param updateDelayInTicks (int) - how many server ticks to wait in between each update.
+     *                           20 = 1 second
      * @param entries            (SidebarString...) - all the entries
      */
     public Sidebar(String title, Plugin plugin, int updateDelayInTicks, SidebarString... entries)
     {
 
+        this.title = title;
+        this.entries = new ArrayList<>(Arrays.asList(entries));
+        this.owningPlugin = plugin;
+
         bukkitScoreboard = bukkitManager.getNewScoreboard();
 
         bukkitObjective = bukkitScoreboard.registerNewObjective("obj", "dummy");
+        bukkitObjective.setDisplaySlot(DisplaySlot.SIDEBAR);
+        bukkitObjective.setDisplayName(this.title);
 
-        this.entries = new ArrayList<>();
-        this.entries.addAll(Arrays.asList(entries));
 
-        this.title = title;
-
+        for (int i = 0; i < 16; i++)
+        {
+            Team team = bukkitScoreboard.registerNewTeam("team" + String.valueOf(i));
+            team.addEntry(ChatColor.values()[i].toString() + "§r");
+            teams[i] = team;
+        }
         update();
 
         setUpdateDelay(plugin, updateDelayInTicks);
@@ -102,6 +121,8 @@ public class Sidebar implements ConfigurationSerializable
 
         if (map.containsKey("placeholders"))
             setPlaceholdersOnUpdate = Bukkit.getPlayer(UUID.fromString((String) map.get("placeholders")));
+
+        owningPlugin = SidebarAPI.getInstance();
 
     }
 
@@ -122,7 +143,8 @@ public class Sidebar implements ConfigurationSerializable
     }
 
     /**
-     * Gets the player that will be used for setting the placeholders in the update function.
+     * Gets the player that will be used for setting the placeholders in the
+     * update function.
      *
      * @return (Player) - The player or null.
      * @see #update()
@@ -133,8 +155,8 @@ public class Sidebar implements ConfigurationSerializable
     }
 
     /**
-     * Sets the player that will be used for setting the placeholders in the update function.
-     * If set to null, the placeholders will not be set.
+     * Sets the player that will be used for setting the placeholders in the
+     * update function. If set to null, the placeholders will not be set.
      *
      * @param player (Player) - the player or null
      * @return (Sidebar) - this Sidebar Object, for chaining.
@@ -164,13 +186,11 @@ public class Sidebar implements ConfigurationSerializable
 
         updateTask = (new BukkitRunnable()
         {
-
             @Override
             public void run()
             {
                 update();
             }
-
         }).runTaskTimer(plugin, delayInTicks, delayInTicks);
 
         return this;
@@ -186,12 +206,9 @@ public class Sidebar implements ConfigurationSerializable
      */
     public Sidebar setAllPlaceholders(Player forPlayer)
     {
-
         for (SidebarString entry : entries)
             entry.setPlaceholders(forPlayer);
-
         return this;
-
     }
 
     /**
@@ -299,12 +316,30 @@ public class Sidebar implements ConfigurationSerializable
     }
 
     /**
-     * Updates the sidebar (it's entries and title).
-     * If {@link #getPlaceholderPlayerForUpdate()} is not null, this will also run {@link #setAllPlaceholders(Player)} with {@link #getPlaceholderPlayerForUpdate()} as the argument.
+     * Updates the sidebar (it's entries and title). If
+     * {@link #getPlaceholderPlayerForUpdate()} is not null, this will also run
+     * {@link #setAllPlaceholders(Player)} with
+     * {@link #getPlaceholderPlayerForUpdate()} as the argument.
      *
      * @return (Sidebar) - this Sidebar Object, for chaining.
      */
     public Sidebar update()
+    {
+
+        if (setPlaceholdersOnUpdate != null)
+            setAllPlaceholders(setPlaceholdersOnUpdate);
+
+        // Anti-flicker only works for <=16 entries
+        if (entries.size() <= 16)
+            updateAntiFlicker();
+        else
+            updateFallback();
+
+        return this;
+
+    }
+
+    private void updateFallback()
     {
 
         if (setPlaceholdersOnUpdate != null)
@@ -315,56 +350,111 @@ public class Sidebar implements ConfigurationSerializable
         for (int i = entries.size(); i > 0; i--)
             bukkitObjective.getScore(entries.get(entries.size() - i).getNext()).setScore(i);
 
-        // this method had been causing issues
-		/*for (int i = entries.size(); i > 0; i--)
-		{
-			
-			String line = entries.get(entries.size() - i).getNext();
-			
-			Team team = bukkitScoreboard.getTeam("team-" + i);
-			if (team != null)
-				team.unregister();
-			
-			String[] teamValues = generateTeamStrings(line);
-			
-			team = bukkitScoreboard.registerNewTeam("team-" + i);
-			
-			team.setPrefix(teamValues[0]);
-			team.addEntry(teamValues[1].equals("") ? ChatColor.RESET.toString() : teamValues[1]);
-			team.setSuffix(teamValues[2].equals("") ? ChatColor.RESET.toString() : teamValues[2]);
-			
-			bukkitObjective.getScore(team.getEntries().toArray(new String[1])[0]).setScore(i);
-			
-		}*/
-
-        return this;
-
     }
 
-    // this method had been causing issues
-	/*private String[] generateTeamStrings(String line)
-	{
-		
-		String prefix = line.length() > 16 ? line.substring(0, 15) : line;
-		line = line.length() > 16 ? line.substring(16) : "";
-		
-		String value = line.length() > 16 ? line.substring(0, 15) : line;
-		line = line.length() > 16 ? line.substring(16) : "";
-		
-		String suffix = line.length() > 16 ? line.substring(0, 15) : line;
-		
-		return new String[]
-				{
-						prefix,
-						value,
-						suffix
-				};
-		
-	}*/
+    private void redoBukkitObjective()
+    {
+        bukkitObjective.unregister();
+        bukkitObjective = bukkitScoreboard.registerNewObjective("obj", "dummy");
+        bukkitObjective.setDisplayName(title);
+        bukkitObjective.setDisplaySlot(DisplaySlot.SIDEBAR);
+    }
+
+    /*
+    Code by fren_gor
+     */
+    private void updateAntiFlicker()
+    {
+
+        if (prevEntries != entries.size())
+        {
+            redoBukkitTeams();
+            for (int i = 0; i < entries.size(); i++)
+                bukkitObjective.getScore(ChatColor.values()[i] + "§r").setScore(entries.size() - 1 - i);
+        }
+
+        prevEntries = entries.size();
+        for (int i = 0; i < prevEntries; i++)
+        {
+            SidebarString entry    = entries.get(i);
+            String        entryStr = ChatColor.translateAlternateColorCodes('&', entry.getNextAndTrim(owningPlugin.getLogger()));
+
+            if (entryStr.startsWith("§r") || entryStr.startsWith("§f"))
+                entryStr = entryStr.substring(2);
+
+            if (entryStr.length() <= 16)
+            {
+                // Simple case: prefix is sufficient to show whole string
+                teams[i].setPrefix(entryStr);
+                teams[i].setSuffix("");
+            }
+            else
+            {
+
+                if (!entryStr.contains("§"))
+                {
+                    teams[i].setPrefix(entryStr.substring(0, 16));
+                    teams[i].setSuffix(entryStr.substring(16));
+                }
+                else
+                {
+                    /*
+                    This is an especially difficult case.
+                    Color symbols cannot be split over team prefix and suffix.
+                     */
+                    boolean       carryingColor = false;
+                    String[]      sections      = entryStr.split("§");
+                    StringBuilder color         = new StringBuilder();
+                    int           len           = 0;
+                    for (String section : sections)
+                    {
+                        if (section.length() == 0)
+                            continue;
+
+                        if (section.length() == 1)
+                        {
+                            if (carryingColor)
+                                color.append("§").append(section);
+                            else
+                                color = new StringBuilder("§").append(section);
+                            carryingColor = true;
+                        }
+                        else
+                        {
+                            if (carryingColor)
+                                color.append('§').append(section, 0, 1);
+                            else
+                                color = new StringBuilder("§").append(section, 0, 1);
+                            len += section.length() - 1;
+                            carryingColor = false;
+                        }
+                        if (len >= 16)
+                        {
+                            String teamSuffix = entryStr.substring(16, entryStr.length());
+                            String teamPrefix = entryStr.substring(0, 16);
+
+                            teams[i].setPrefix(teamPrefix);
+
+                            // Set suffix
+                            // Color needs only be included if it has any effect (i.e. if it is not "empty"/"whitespace")
+                            String colorStr = color.toString().toLowerCase(Locale.ENGLISH);
+                            teams[i].setSuffix(EMPTY_COLOR_STRINGS.contains(colorStr) ? teamSuffix : color + teamSuffix);
+
+                            break;
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+    }
 
     /**
-     * Adds an empty entry.
-     * The entry won't conflict with any other empty entries made this way.
+     * Adds an empty entry. The entry won't conflict with any other empty
+     * entries made this way.
      *
      * @return (Sidebar) - this Sidebar Object, for chaining.
      */
@@ -377,15 +467,25 @@ public class Sidebar implements ConfigurationSerializable
 
     }
 
-    private void redoBukkitObjective()
+    /**
+     * Gets the Scoreboard used by this Sidebar.
+     *
+     * @return The Scoreboard associated with this Sidebar
+     * @since 2.9
+     */
+    public Scoreboard getTheScoreboard()
     {
+        return bukkitScoreboard;
+    }
 
-        bukkitObjective.unregister();
-        bukkitObjective = bukkitScoreboard.registerNewObjective("obj", "dummy");
-
-        bukkitObjective.setDisplayName(title);
-        bukkitObjective.setDisplaySlot(DisplaySlot.SIDEBAR);
-
+    private void redoBukkitTeams()
+    {
+        for (int i = 0; i < 16; i++)
+        {
+            bukkitScoreboard.resetScores(ChatColor.values()[i] + "§r");
+            teams[i].setSuffix("");
+            teams[i].setPrefix("");
+        }
     }
 
 }
