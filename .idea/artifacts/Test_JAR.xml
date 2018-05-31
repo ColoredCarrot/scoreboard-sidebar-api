@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="Test JAR">
+    <output-path>$PROJECT_DIR$/classes/artifacts/Test_JAR</output-path>
+    <root id="archive" name="Test JAR.jar">
+      <element id="module-output" name="test" />
+      <element id="file-copy" path="$PROJECT_DIR$/test/plugin.yml" />
+    </root>
+  </artifact>
+</component>

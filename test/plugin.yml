@@ -1,0 +1,4 @@
+main: com.coloredcarrot.api.sidebar.test.SidebarAPITest
+version: 2.9
+author: ColoredCarrot
+name: SidebarAPITest
