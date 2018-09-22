@@ -63,14 +63,14 @@ public class LongSidebar implements ConfigurationSerializable, Sidebars {
 	private transient Scoreboard bukkitScoreboard;
 	private transient Objective bukkitObjective;
 	private transient Objective bukkitObjective1;
+	private transient Objective bukkitObjective2;
 	private transient BukkitTask updateTask;
 	private String title;
 	private Player setPlaceholdersOnUpdate = null;
 	private transient Team[] teams = new Team[15];
 	private transient Team[] teams1 = new Team[15];
-	private transient boolean updateState = false;
-	private transient boolean isUpdating = false;
-	private transient boolean isUpdating1 = false;
+	private transient Team[] teams2 = new Team[15];
+	private transient int updateState = 0;
 
 	/**
 	 * Constructs a new Sidebar.
@@ -95,15 +95,19 @@ public class LongSidebar implements ConfigurationSerializable, Sidebars {
 
 		bukkitObjective = bukkitScoreboard.registerNewObjective("obj", "dummy");
 		bukkitObjective1 = bukkitScoreboard.registerNewObjective("obj1", "dummy");
+		bukkitObjective2 = bukkitScoreboard.registerNewObjective("obj2", "dummy");
 		bukkitObjective.setDisplaySlot(DisplaySlot.SIDEBAR);
 		bukkitObjective.setDisplayName(this.title);
 		bukkitObjective1.setDisplayName(this.title);
+		bukkitObjective2.setDisplayName(this.title);
 
 		for (int i = 0; i < 15; i++) {
 			Team team = bukkitScoreboard.registerNewTeam("team" + String.valueOf(i));
 			Team team1 = bukkitScoreboard.registerNewTeam("iteam" + String.valueOf(i));
+			Team team2 = bukkitScoreboard.registerNewTeam("iiteam" + String.valueOf(i));
 			teams[i] = team;
 			teams1[i] = team1;
+			teams2[i] = team2;
 		}
 		update();
 
@@ -158,7 +162,7 @@ public class LongSidebar implements ConfigurationSerializable, Sidebars {
 	 *
 	 * @param player
 	 *            (Player) - the player or null
-	 * @return (Sidebar) - this Sidebar Object, for chaining.
+	 * @return (LongSidebar) - this LongSidebar Object, for chaining.
 	 * @see #update()
 	 */
 	public LongSidebar setPlaceholderPlayerForUpdate(Player player) {
@@ -173,7 +177,7 @@ public class LongSidebar implements ConfigurationSerializable, Sidebars {
 	 *            (Plugin) - your plugin
 	 * @param delayInTicks
 	 *            (int) - the ticks
-	 * @return (Sidebar) - this Sidebar Object, for chaining.
+	 * @return (LongSidebar) - this LongSidebar Object, for chaining.
 	 */
 	public LongSidebar setUpdateDelay(Plugin plugin, int delayInTicks) {
 
@@ -199,7 +203,7 @@ public class LongSidebar implements ConfigurationSerializable, Sidebars {
 	 *
 	 * @param forPlayer
 	 *            (Player) - what player to set the placeholders for
-	 * @return (Sidebar) - this Sidebar Object, for chaining.
+	 * @return (LongSidebar) - this LongSidebar Object, for chaining.
 	 * @since 2.4
 	 */
 	public LongSidebar setAllPlaceholders(Player forPlayer) {
@@ -223,7 +227,7 @@ public class LongSidebar implements ConfigurationSerializable, Sidebars {
 	 *
 	 * @param title
 	 *            (String) - the new title
-	 * @return (Sidebar) - this Sidebar Object, for chaining.
+	 * @return (LongSidebar) - this LongSidebar Object, for chaining.
 	 */
 	public LongSidebar setTitle(String title) {
 		this.title = title;
@@ -245,7 +249,7 @@ public class LongSidebar implements ConfigurationSerializable, Sidebars {
 	 *
 	 * @param entries
 	 *            (List: SidebarString) - the new entries
-	 * @return (Sidebar) - this Sidebar Object, for chaining.
+	 * @return (LongSidebar) - this LongSidebar Object, for chaining.
 	 */
 	public LongSidebar setEntries(List<SidebarString> entries) {
 		this.entries = entries;
@@ -257,7 +261,7 @@ public class LongSidebar implements ConfigurationSerializable, Sidebars {
 	 *
 	 * @param entries
 	 *            (SidebarString) - the entry
-	 * @return (Sidebar) - this Sidebar Object, for chaining.
+	 * @return (LongSidebar) - this LongSidebar Object, for chaining.
 	 */
 	public LongSidebar addEntry(SidebarString... entries) {
 		this.entries.addAll(Arrays.asList(entries));
@@ -269,7 +273,7 @@ public class LongSidebar implements ConfigurationSerializable, Sidebars {
 	 *
 	 * @param entry
 	 *            (SidebarString) - the entry
-	 * @return (Sidebar) - this Sidebar Object, for chaining.
+	 * @return (LongSidebar) - this LongSidebar Object, for chaining.
 	 */
 	public LongSidebar removeEntry(SidebarString entry) {
 		entries.remove(entry);
@@ -281,7 +285,7 @@ public class LongSidebar implements ConfigurationSerializable, Sidebars {
 	 *
 	 * @param num
 	 *            (int) - the line
-	 * @return (Sidebar) - this Sidebar Object, for chaining.
+	 * @return (LongSidebar) - this LongSidebar Object, for chaining.
 	 */
 	public LongSidebar removeEntry(int num) {
 		entries.remove(num);
@@ -293,7 +297,7 @@ public class LongSidebar implements ConfigurationSerializable, Sidebars {
 	 *
 	 * @param player
 	 *            (Player) - the player
-	 * @return (Sidebar) - this Sidebar Object, for chaining.
+	 * @return (LongSidebar) - this LongSidebar Object, for chaining.
 	 */
 	public LongSidebar showTo(Player player) {
 		player.setScoreboard(bukkitScoreboard);
@@ -305,7 +309,7 @@ public class LongSidebar implements ConfigurationSerializable, Sidebars {
 	 *
 	 * @param player
 	 *            (Player) - the player
-	 * @return (Sidebar) - this Sidebar Object, for chaining.
+	 * @return (LongSidebar) - this LongSidebar Object, for chaining.
 	 */
 	public LongSidebar hideFrom(Player player) {
 		player.setScoreboard(bukkitManager.getMainScoreboard());
@@ -318,7 +322,7 @@ public class LongSidebar implements ConfigurationSerializable, Sidebars {
 	 * {@link #setAllPlaceholders(Player)} with
 	 * {@link #getPlaceholderPlayerForUpdate()} as the argument.
 	 *
-	 * @return (Sidebar) - this Sidebar Object, for chaining.
+	 * @return (LongSidebar) - this LongSidebar Object, for chaining.
 	 */
 	public LongSidebar update() {
 
@@ -335,8 +339,6 @@ public class LongSidebar implements ConfigurationSerializable, Sidebars {
 	 * Code by fren_gor
 	 */
 	private void updateOne() {
-
-		isUpdating = true;
 
 		redoBukkitObjective1();
 
@@ -437,8 +439,8 @@ public class LongSidebar implements ConfigurationSerializable, Sidebars {
 			}
 		}
 
-		bukkitObjective.setDisplaySlot(DisplaySlot.SIDEBAR);
-		isUpdating = false;
+		bukkitObjective2.setDisplaySlot(DisplaySlot.SIDEBAR);
+
 	}
 
 	/*
@@ -470,8 +472,6 @@ public class LongSidebar implements ConfigurationSerializable, Sidebars {
 	 * Code by fren_gor
 	 */
 	private void updateTwo() {
-
-		isUpdating1 = true;
 
 		redoBukkitObjective2();
 
@@ -571,8 +571,115 @@ public class LongSidebar implements ConfigurationSerializable, Sidebars {
 			}
 		}
 
+		bukkitObjective.setDisplaySlot(DisplaySlot.SIDEBAR);
+	}
+
+	/*
+	 * Code by fren_gor
+	 */
+	private void updateThree() {
+
+		redoBukkitObjective3();
+
+		for (int i = 0; i < entries.size(); i++) {
+
+			SidebarString entry = entries.get(i);
+			String entryStr = ChatColor.translateAlternateColorCodes('&',
+					entry.getNextAndTrim(owningPlugin.getLogger(), true));
+
+			teams2[i].setSuffix("");
+
+			if (entryStr.length() <= 16) {
+				// Simple case: prefix is sufficient to show whole string
+				teams2[i].setPrefix(entryStr);
+
+				teams2[i].addEntry(ChatColor.values()[i] + "§r");
+
+				bukkitObjective2.getScore(ChatColor.values()[i] + "§r").setScore(entries.size() - 1 - i);
+
+			} else {
+
+				String s1 = entryStr.length() <= 16 ? entryStr : entryStr.substring(0, 16);
+				String s2 = "";
+				if (entryStr.length() > 16)
+					s2 = entryStr.length() <= 50 ? entryStr.substring(16) : entryStr.substring(16, 50);
+				String s3 = "";
+				if (entryStr.length() > 50)
+					s3 = entryStr.substring(50);
+
+				if (!entryStr.contains("§")) {
+					if (entryStr.length() <= 50) {
+
+						teams2[i].setPrefix(s1);
+						teams2[i].addEntry(ChatColor.values()[i] + "§r" + s2);
+						bukkitObjective2.getScore(ChatColor.values()[i] + "§r" + s1).setScore(entries.size() - 1 - i);
+
+					} else {
+
+						teams2[i].setPrefix(s1);
+						teams2[i].addEntry(ChatColor.values()[i] + "§r" + s2);
+						teams2[i].setSuffix(s3);
+						bukkitObjective2.getScore(ChatColor.values()[i] + "§r" + s3).setScore(entries.size() - 1 - i);
+					}
+
+				} else {
+
+					boolean color1 = true;
+					boolean color2 = true;
+
+					if (s1.endsWith("§")) {
+						s1 = s1.substring(0, s1.length() - 1);
+						if (entryStr.length() > 16) {
+							s2 = "§" + s2;
+							color1 = false;
+						}
+					}
+
+					if (s2.endsWith("§")) {
+						s2 = s2.substring(0, s2.length() - 1);
+						if (entryStr.length() > 50) {
+							s3 = "§" + s3;
+							color2 = false;
+						}
+					}
+
+					String color = getLastChatColor(s1);
+
+					if (entryStr.length() <= 50) {
+
+						teams2[i].setPrefix(s1);
+						if (color1) {
+							teams2[i].addEntry(ChatColor.values()[i] + color + s2);
+							bukkitObjective2.getScore(ChatColor.values()[i] + color + s2)
+									.setScore(entries.size() - 1 - i);
+						} else {
+							teams2[i].addEntry(ChatColor.values()[i] + s2);
+							bukkitObjective2.getScore(ChatColor.values()[i] + s2).setScore(entries.size() - 1 - i);
+						}
+					} else {
+						teams2[i].setPrefix(s1);
+						if (color2) {
+
+							teams2[i].addEntry(ChatColor.values()[i] + color + s2);
+							teams2[i].setSuffix(getLastChatColor(s2) + s3);
+							bukkitObjective2.getScore(ChatColor.values()[i] + color + s2)
+									.setScore(entries.size() - 1 - i);
+
+						} else {
+							teams2[i].addEntry(ChatColor.values()[i] + s2);
+							teams2[i].setSuffix(s3);
+							bukkitObjective2.getScore(ChatColor.values()[i] + s2).setScore(entries.size() - 1 - i);
+						}
+
+					}
+
+				}
+
+			}
+		}
+
 		bukkitObjective1.setDisplaySlot(DisplaySlot.SIDEBAR);
-		isUpdating1 = false;
+
 	}
 
 	/*
@@ -580,52 +687,16 @@ public class LongSidebar implements ConfigurationSerializable, Sidebars {
 	 */
 	private void updateAntiFlicker() {
 
-		if (updateState) {
-
-			if (isUpdating) {
-
-				updateOne();
-
-			} else {
-				new Runnable() {
-
-					@Override
-					public void run() {
-
-						while (isUpdating) {
-
-						}
-
-						updateOne();
-
-					}
-				}.run();
-			}
-
+		if (updateState == 0) {
+			updateOne();
+			updateState++;
+		} else if (updateState == 1) {
+			updateTwo();
+			updateState++;
 		} else {
-
-			if (isUpdating1) {
-
-				updateTwo();
-
-			} else {
-				new Runnable() {
-
-					@Override
-					public void run() {
-
-						while (isUpdating1) {
-
-						}
-
-						updateTwo();
-
-					}
-				}.run();
-			}
+			updateThree();
+			updateState = 0;
 		}
-
-		updateState = !updateState;
 
 	}
 
@@ -633,7 +704,7 @@ public class LongSidebar implements ConfigurationSerializable, Sidebars {
 	 * Adds an empty entry. The entry won't conflict with any other empty
 	 * entries made this way.
 	 *
-	 * @return (Sidebar) - this Sidebar Object, for chaining.
+	 * @return (LongSidebar) - this LongSidebar Object, for chaining.
 	 */
 	public LongSidebar addEmpty() {
 
@@ -663,6 +734,12 @@ public class LongSidebar implements ConfigurationSerializable, Sidebars {
 		bukkitObjective1.unregister();
 		bukkitObjective1 = bukkitScoreboard.registerNewObjective("obj1", "dummy");
 		bukkitObjective1.setDisplayName(title);
+	}
+
+	private void redoBukkitObjective3() {
+		bukkitObjective2.unregister();
+		bukkitObjective2 = bukkitScoreboard.registerNewObjective("obj2", "dummy");
+		bukkitObjective2.setDisplayName(title);
 	}
 
 }
