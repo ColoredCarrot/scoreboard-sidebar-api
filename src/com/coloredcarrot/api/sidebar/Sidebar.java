@@ -56,7 +56,7 @@ import com.google.common.collect.ImmutableSet;
  */
 public class Sidebar implements ConfigurationSerializable, Sidebars {
 
-	private static final Set<String> EMPTY_COLOR_STRINGS = ImmutableSet.of("งf", "งfงr", "งr", "งrงf");
+	private static final Set<String> EMPTY_COLOR_STRINGS = ImmutableSet.of("ยงf", "ยงfยงr", "ยงr", "ยงrยงf");
 
 	private static transient ScoreboardManager bukkitManager = Bukkit.getScoreboardManager();
 
@@ -101,7 +101,7 @@ public class Sidebar implements ConfigurationSerializable, Sidebars {
 
 		for (int i = 0; i < 15; i++) {
 			Team team = bukkitScoreboard.registerNewTeam("team" + String.valueOf(i));
-			team.addEntry(ChatColor.values()[i].toString() + "งr");
+			team.addEntry(ChatColor.values()[i].toString() + "ยงr");
 			teams[i] = team;
 		}
 		update();
@@ -361,7 +361,7 @@ public class Sidebar implements ConfigurationSerializable, Sidebars {
 		if (prevEntries != entries.size()) {
 			redoBukkitTeams();
 			for (int i = 0; i < entries.size(); i++)
-				bukkitObjective.getScore(ChatColor.values()[i] + "งr").setScore(entries.size() - 1 - i);
+				bukkitObjective.getScore(ChatColor.values()[i] + "ยงr").setScore(entries.size() - 1 - i);
 		}
 
 		prevEntries = entries.size();
@@ -370,7 +370,7 @@ public class Sidebar implements ConfigurationSerializable, Sidebars {
 			String entryStr = ChatColor.translateAlternateColorCodes('&',
 					entry.getNextAndTrim(owningPlugin.getLogger(), false));
 
-			if (entryStr.startsWith("งr") || entryStr.startsWith("งf"))
+			if (entryStr.startsWith("ยงr") || entryStr.startsWith("ยงf"))
 				entryStr = entryStr.substring(2);
 
 			if (entryStr.length() <= 16) {
@@ -379,7 +379,7 @@ public class Sidebar implements ConfigurationSerializable, Sidebars {
 				teams[i].setSuffix("");
 			} else {
 
-				if (!entryStr.contains("ง")) {
+				if (!entryStr.contains("ยง")) {
 					teams[i].setPrefix(entryStr.substring(0, 16));
 					teams[i].setSuffix(entryStr.substring(16));
 				} else {
@@ -388,7 +388,7 @@ public class Sidebar implements ConfigurationSerializable, Sidebars {
 					 * cannot be split over team prefix and suffix.
 					 */
 					boolean carryingColor = false;
-					String[] sections = entryStr.split("ง");
+					String[] sections = entryStr.split("ยง");
 					StringBuilder color = new StringBuilder();
 					int len = 0;
 					for (String section : sections) {
@@ -397,21 +397,22 @@ public class Sidebar implements ConfigurationSerializable, Sidebars {
 
 						if (section.length() == 1) {
 							if (carryingColor)
-								color.append("ง").append(section);
+								color.append("ยง").append(section);
 							else
-								color = new StringBuilder("ง").append(section);
+								color = new StringBuilder("ยง").append(section);
 							carryingColor = true;
 						} else {
 							if (carryingColor)
-								color.append('ง').append(section, 0, 1);
+								color.append('ยง').append(section, 0, 1);
 							else
-								color = new StringBuilder("ง").append(section, 0, 1);
+								color = new StringBuilder("ยง").append(section, 0, 1);
 							len += section.length() - 1;
 							carryingColor = false;
 						}
-						if (len >= 16) {
-							String teamSuffix = entryStr.substring(16, entryStr.length());
-							String teamPrefix = entryStr.substring(0, 16);
+						if (len >= 16 || i == sections.length - 1) {
+							boolean colorOnSplit = entryStr.charAt(15) == 'ยง';
+							String teamSuffix = entryStr.substring(colorOnSplit ? 17 : 16, entryStr.length());
+							String teamPrefix = entryStr.substring(0, colorOnSplit ? 15 : 16);
 
 							teams[i].setPrefix(teamPrefix);
 
@@ -460,7 +461,7 @@ public class Sidebar implements ConfigurationSerializable, Sidebars {
 
 	private void redoBukkitTeams() {
 		for (int i = 0; i < 15; i++) {
-			bukkitScoreboard.resetScores(ChatColor.values()[i] + "งr");
+			bukkitScoreboard.resetScores(ChatColor.values()[i] + "ยงr");
 			teams[i].setSuffix("");
 			teams[i].setPrefix("");
 		}
