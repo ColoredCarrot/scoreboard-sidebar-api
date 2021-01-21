@@ -391,7 +391,8 @@ public class Sidebar implements ConfigurationSerializable, Sidebars {
 					String[] sections = entryStr.split("§");
 					StringBuilder color = new StringBuilder();
 					int len = 0;
-					for (String section : sections) {
+					for (int s = 0, sectionsLength = sections.length; s < sectionsLength; s++) {
+						String section = sections[s];
 						if (section.length() == 0)
 							continue;
 
@@ -409,7 +410,7 @@ public class Sidebar implements ConfigurationSerializable, Sidebars {
 							len += section.length() - 1;
 							carryingColor = false;
 						}
-						if (len >= 16 || i == sections.length - 1) {
+						if (len >= 16 || s == sections.length - 1) {
 							boolean colorOnSplit = entryStr.charAt(15) == '§';
 							String teamSuffix = entryStr.substring(colorOnSplit ? 17 : 16, entryStr.length());
 							String teamPrefix = entryStr.substring(0, colorOnSplit ? 15 : 16);
